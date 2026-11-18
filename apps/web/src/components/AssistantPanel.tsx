@@ -1,5 +1,6 @@
 import { Button, ErrorMessage, TextAreaField } from "@fieldnotes/ui";
 import { useState, type FormEvent } from "react";
+import { trackAssistantResponse } from "../analytics/assistantEvents";
 import { api, type ChatMessage } from "../api/client";
 
 export function AssistantPanel() {
@@ -17,11 +18,27 @@ export function AssistantPanel() {
     setDraft("");
     setSending(true);
     setError(null);
+    const messageCount = next.length;
+    const conversationTurn = next.filter((message) => message.role === "user").length;
     try {
-      const { reply } = await api.askAssistant(next);
+      const { reply, model } = await api.askAssistant(next);
+      // A null model means the API has no OPENAI_API_KEY and sent a not-configured reply.
+      trackAssistantResponse({
+        outcome: model === null ? "not_configured" : "replied",
+        model: model ?? undefined,
+        messageCount,
+        conversationTurn,
+      });
       setMessages([...next, { role: "assistant", content: reply }]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The assistant could not answer");
+      const message = err instanceof Error ? err.message : "The assistant could not answer";
+      trackAssistantResponse({
+        outcome: "failed",
+        messageCount,
+        conversationTurn,
+        errorMessage: message,
+      });
+      setError(message);
     } finally {
       setSending(false);
     }
