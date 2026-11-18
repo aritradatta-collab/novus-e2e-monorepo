@@ -26,6 +26,8 @@ export function toProfile(user: User, organization: Organization) {
     email: user.email,
     name: user.name,
     role: user.role,
+    active: user.active,
+    createdAt: user.createdAt,
     organization: { id: organization.id, name: organization.name, plan: organization.plan },
   };
 }

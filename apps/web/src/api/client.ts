@@ -5,6 +5,8 @@ export interface Profile {
   email: string;
   name: string;
   role: "researcher" | "admin";
+  active: boolean;
+  createdAt: string;
   organization: { id: string; name: string; plan: string };
 }
 

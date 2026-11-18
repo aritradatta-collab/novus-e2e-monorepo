@@ -8,6 +8,8 @@ export interface AdminProfile {
   email: string;
   name: string;
   role: Role;
+  active: boolean;
+  createdAt: string;
   organization: { id: string; name: string; plan: Plan };
 }
 

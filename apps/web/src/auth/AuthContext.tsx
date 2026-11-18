@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { clearPendoSession, identifyPendoVisitor } from "../analytics/pendo";
 import { api, tokenStore, type Profile } from "../api/client";
 
 interface AuthState {
@@ -24,6 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Covers sign-in, session restore from a stored token, and profile edits.
+  useEffect(() => {
+    if (user) identifyPendoVisitor(user);
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
     const { token, user: profile } = await api.login(email, password);
     tokenStore.set(token);
@@ -36,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       tokenStore.clear();
       setUser(null);
+      clearPendoSession();
     }
   };
 

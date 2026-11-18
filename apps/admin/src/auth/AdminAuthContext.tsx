@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { clearPendoSession, identifyPendoVisitor } from "../analytics/pendo";
 import { adminApi, tokenStore, type AdminProfile } from "../api/client";
 
 interface AdminAuthState {
@@ -26,6 +27,22 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Covers sign-in and session restore. Billing is admin-only, so seats are read here.
+  useEffect(() => {
+    if (!admin) return;
+    let current = true;
+    adminApi
+      .getBilling()
+      .then((billing) => billing.seats)
+      .catch(() => undefined)
+      .then((seats) => {
+        if (current) identifyPendoVisitor(admin, seats);
+      });
+    return () => {
+      current = false;
+    };
+  }, [admin]);
+
   const signIn = async (email: string, password: string) => {
     const { token, user } = await adminApi.login(email, password);
     if (user.role !== "admin") {
@@ -44,6 +61,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       tokenStore.clear();
       setAdmin(null);
+      clearPendoSession();
     }
   };
 
